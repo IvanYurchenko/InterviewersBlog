@@ -1,0 +1,11 @@
+$font-family: Arial, Tahoma;
+$document-bg-color: #333;
+
+body {
+  font-family: $font-family;
+  background-color: $document-bg-color;
+}
+
+h1 {
+  color: red;
+}
