@@ -1,24 +1,37 @@
 ////////////////////// DEPENDENCIES AND VARIABLES //////////////////////
+var srcCssDir = './resources/styles/';
+var srcJsDir = './resources/js/';
+var dstCssDir = './build/css/';
+var dstJsDir = './build/js/';
+var appDir = './app/';
+
+
 var gulp = require('gulp');
 
 // used for concatenating/minifying bower files and other js/css
 var concat = require('gulp-concat');
 var cleanCSS = require('gulp-clean-css');
 var uglify = require('gulp-uglify');
-var tslint = require("gulp-tslint");
+var tslint = require('gulp-tslint');
+var mainBowerFiles = require('main-bower-files');
 var kServer = require('karma').Server;
 
-// used for pulling in bower files.
-var lib = require('bower-files')({
-    "overrides": {
-        "bootstrap": {
-            "main": [
-                "less/bootstrap.less",
-                "dist/css/bootstrap.css",
-                "dist/js/bootstrap.js"
-            ]
-        }
-    }
+
+gulp.task('bower', function () {
+    return gulp.src(mainBowerFiles(), {
+        base: 'bower_components'
+    }).pipe(gulp.dest('./lib/bootstrap/'));
+});
+
+gulp.task('bootstrap:prepareLess', ['bower'], function () {
+    return gulp.src('./lib/less/bootstrap/variables.less')
+        .pipe(gulp.dest('./build/less'));
+});
+
+gulp.task('bootstrap:compileLess', ['bootstrap:prepareLess'], function () {
+    return gulp.src('public/lib/bootstrap/less/bootstrap.less')
+        .pipe(less())
+        .pipe(gulp.dest('public/lib/bootstrap/dist/css'));
 });
 
 // used for build and clean tasks.
@@ -35,7 +48,7 @@ var sourcemaps = require('gulp-sourcemaps');
 ////////////////////// TYPESCRIPT //////////////////////
 // clean task
 gulp.task('tsClean', function () {
-    return del(['app/**/*.js', 'app/**/*.js.map']);
+    return del([appDir + '**/*.js', appDir + '**/*.js.map']);
 });
 
 // clean and then compile once. To be called from server and global build.
@@ -45,7 +58,7 @@ gulp.task('ts', ['tsClean'], shell.task([
 
 // tslint
 gulp.task("tslint", function () {
-    gulp.src('app/**/*.ts')
+    gulp.src(appDir + '**/*.ts')
         .pipe(tslint({
             formatter: "verbose"
         }))
@@ -55,30 +68,30 @@ gulp.task("tslint", function () {
 ////////////////////// JS BUILD //////////////////////
 
 gulp.task('jsBuildClean', function () {
-    return del(['./build/js/vendor.min.js']);
+    return del([dstJsDir + 'vendor.min.js']);
 });
 
 gulp.task('jsBuild', ['jsBuildClean'], function () {
-    return gulp.src(['resources/js/**/*.js'])
+    return gulp.src([srcJsDir + '**/*.js'])
         .pipe(uglify())
         .pipe(concat('vendor.min.js'))
-        .pipe(gulp.dest('./build/js'));
+        .pipe(gulp.dest(dstJsDir));
 });
 
 
 ////////////////////// SASS & CSS BUILD //////////////////////
 
 gulp.task('cssBuildClean', function () {
-    return del(['./build/css/vendor.min.css']);
+    return del([dstCssDir + 'vendor.min.css']);
 });
 
 gulp.task('cssBuild', ['cssBuildClean'], function () {
-    return gulp.src(['resources/styles/**/*.scss', 'resources/styles/**/*.css'])
+    return gulp.src([srcCssDir + '**/*.scss', srcCssDir + '**/*.css'])
         .pipe(sourcemaps.init())
         .pipe(sass())
         .pipe(sourcemaps.write())
         .pipe(concat('vendor.min.css'))
-        .pipe(gulp.dest('./build/css'));
+        .pipe(gulp.dest(dstCssDir));
 });
 
 ////////////////////// SERVER //////////////////////
@@ -86,13 +99,16 @@ gulp.task('serve', ['build'], function () {
     browserSync.init({
         server: {
             baseDir: "./",
-            index: "index.html"
+            index: "index.html",
+            routes: {
+                '/**': 'index.html'
+            }
         }
     });
-    gulp.watch(['resources/js/*/**.js'], ['jsRebuild']); // vanilla js changes, reload.
-    gulp.watch(['*.html'], ['htmlRebuild']); // html changes, reload.
-    gulp.watch(['resources/styles/**/*.css', 'resources/styles/**/*.scss'], ['cssRebuild']); // css or sass changes, concatenate all css/sass, build, reload.
-    gulp.watch(['app/**/*.ts'], ['tsRebuild']); // typescript files change, compile then reload.
+    gulp.watch([srcJsDir + '*/**.js'], ['jsRebuild']); // vanilla js changes, reload.
+    gulp.watch(['*.html', appDir + '**/*.html'], ['htmlRebuild']); // html changes, reload.
+    gulp.watch([srcCssDir + '**/*.css', srcCssDir + '**/*.scss', appDir + '**/*.css', appDir + '**/*.scss'], ['cssRebuild']); // css or sass changes, concatenate all css/sass, build, reload.
+    gulp.watch([appDir + '**/*.ts'], ['tsRebuild']); // typescript files change, compile then reload.
 });
 
 gulp.task('jsRebuild', ['jsBuild'], function () {
@@ -103,7 +119,7 @@ gulp.task('htmlRebuild', function () {
     browserSync.reload();
 });
 
-gulp.task('cssRebuild', ['sassBuild'], function () {
+gulp.task('cssRebuild', ['cssBuild'], function () {
     browserSync.reload();
 });
 

@@ -1,7 +1,23 @@
 {
   "name": "angular2-starter",
   "description": "",
-  "main": "index.html",
+  "main": [
+    "./dist/css/bootstrap.css",
+    "./dist/js/bootstrap.js",
+    "./dist/fonts/glyphicons-halflings-regular.eot",
+    "./dist/fonts/glyphicons-halflings-regular.svg",
+    "./dist/fonts/glyphicons-halflings-regular.ttf",
+    "./dist/fonts/glyphicons-halflings-regular.woff"
+  ],
+  "overrides": {
+    "bootstrap": {
+      "main": [
+        "./lib/less/!(variables).less",
+        "./lib/dist/fonts/*",
+        "./lib/dist/js/*"
+      ]
+    }
+  },
   "authors": [
     "Roman Panchenko <rpanchenko123@gmail.com>"
   ],
